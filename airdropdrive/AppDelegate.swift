@@ -8,24 +8,28 @@
 
 import UIKit
 
-// handy helper
-extension UIView {
-    func subview(at: NSInteger) -> AnyObject { return self.subviews[at] }
+extension CGRect {
+    func marginBy(dx: CGFloat, dy: CGFloat) -> CGRect {
+        return CGRect(x: self.minX + dx, y: self.minX + dy, width: self.width + dx, height: self.height + dy)
+    }
+
+    func resizedBy(size: CGFloat) -> CGRect {
+        return CGRect(origin: self.origin, size: CGSize(width: size, height: size))
+    }
 }
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate, UITableViewDataSource, UITableViewDelegate {
     var window: UIWindow!
     var vc: UIViewController!
+    let icon = UIImage(named: "icon")
 
     // MARK: model
     var files: [URL] {
         let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
         let inbox = path.appending("/Inbox")
         let url = URL(fileURLWithPath: inbox, isDirectory: true)
-        return (try? FileManager.default.contentsOfDirectory(at: url,
-                                                             includingPropertiesForKeys: nil,
-                                                             options: .skipsHiddenFiles)) ?? []
+        return try! FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
     }
 
     // MARK: controller
@@ -47,7 +51,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITableViewDataSource, UI
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplicationOpenURLOptionsKey : Any] = [:]) -> Bool {
-        self.vc.view.subview(at: 0).reloadData()
+        (self.vc.view.subviews[0] as! UITableView).reloadData()
         return true
     }
 
@@ -67,9 +71,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UITableViewDataSource, UI
     // MARK: view
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = UITableViewCell()
-        let content = cell.subview(at: 0)
-        content.addSubview(UILabel(frame: content.bounds.offsetBy(dx: 16, dy: 0)))
-        content.subview(at: 0).setValue(self.files[indexPath.row].absoluteString.components(separatedBy: "/").last, forKey: "text")
+        cell.separatorInset = UIEdgeInsets(top: 0, left: 48, bottom: 0, right: 0)
+
+        let content = cell.subviews[0]
+        content.addSubview(UILabel(frame: content.bounds.marginBy(dx: 48, dy: 0)))
+        content.addSubview(UIImageView(frame: content.bounds.resizedBy(size: 48).insetBy(dx: 10, dy: 10)))
+
+        content.subviews[0].setValue(self.files[indexPath.row].path.components(separatedBy: "/").last, forKey: "text")
+        content.subviews[1].setValue(self.icon, forKey: "image")
         return cell
     }
 
